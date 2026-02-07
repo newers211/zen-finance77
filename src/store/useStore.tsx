@@ -18,6 +18,7 @@ interface FinanceStore {
   // Методы для обновления данных
   setTransactions: (t: any[]) => void;
   addTransaction: (t: any) => void;
+  removeTransaction: (id: string) => void;
   setCategories: (c: any[]) => void;
   
   // Методы для настроек
@@ -47,6 +48,10 @@ export const useFinanceStore = create<FinanceStore>()(
       // Добавляет новую транзакцию в начало списка (важно для мгновенного обновления истории)
       addTransaction: (t) => set((state) => ({ 
         transactions: [t, ...state.transactions] 
+      })),
+
+      removeTransaction: (id) => set((state) => ({
+        transactions: state.transactions.filter((tx) => tx.id !== id)
       })),
 
       setCategories: (c) => set({ categories: c }),

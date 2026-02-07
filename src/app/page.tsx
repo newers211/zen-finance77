@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Settings, Loader2, User, ArrowUpRight, ArrowDownLeft, DollarSign, Coins } from 'lucide-react';
+import { LogOut, Settings, Loader2, User, ArrowUpRight, ArrowDownLeft, DollarSign, Coins, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -40,7 +40,8 @@ export default function Home() {
     theme, lang, 
     currency, setCurrency, 
     rate, setRate,
-    clearUserData
+    clearUserData,
+    removeTransaction
   } = useFinanceStore();
 
   const [activeTab, setActiveTab] = useState('all'); 
@@ -116,6 +117,18 @@ export default function Home() {
     clearUserData();
     await supabase.auth.signOut();
     router.push('/login');
+  };
+
+  const handleDeleteTransaction = async (tr: { id: string; user_id?: string }) => {
+    if (!confirm(lang === 'ru' ? 'Удалить эту операцию?' : 'Delete this transaction?')) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('id', tr.id)
+      .eq('user_id', user.id);
+    if (!error) removeTransaction(tr.id);
   };
 
   // 5. ФИЛЬТРАЦИЯ
@@ -221,26 +234,41 @@ export default function Home() {
             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{filteredData.length} {t.ops}</span>
           </div>
           
-          <AnimatePresence mode='popLayout'>
+          <AnimatePresence mode="popLayout">
             {filteredData.map((tr) => (
-              <motion.div 
-                layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} key={tr.id}
-                className="group flex items-center justify-between p-5 bg-white dark:bg-zinc-900 rounded-[28px] border border-zinc-50 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all active:scale-[0.98]"
+              <motion.div
+                layout
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                key={tr.id}
+                className="group flex items-center justify-between gap-3 p-5 bg-white dark:bg-zinc-900 rounded-[28px] border border-zinc-50 dark:border-zinc-800 shadow-sm hover:shadow-xl transition-all active:scale-[0.98]"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-zinc-50 dark:bg-zinc-800 rounded-[22px] flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="w-14 h-14 shrink-0 bg-zinc-50 dark:bg-zinc-800 rounded-[22px] flex items-center justify-center text-3xl group-hover:scale-110 transition-transform shadow-inner">
                     {categories.find(c => c.name === tr.category)?.icon || '📦'}
                   </div>
-                  <div>
-                    <p className="font-bold text-sm">{tr.category}</p>
+                  <div className="min-w-0">
+                    <p className="font-bold text-sm truncate">{tr.category}</p>
                     <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
                       {new Date(tr.created_at).toLocaleDateString(lang === 'ru' ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'short' })}
                     </p>
                   </div>
                 </div>
-                <p className={`font-black text-lg ${tr.type === 'income' ? 'text-green-500' : 'text-zinc-900 dark:text-white'}`}>
-                  {tr.type === 'income' ? '+' : '-'}{formatVal(tr.amount).text} {formatVal(tr.amount).sign}
-                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <p className={`font-black text-lg ${tr.type === 'income' ? 'text-green-500' : 'text-zinc-900 dark:text-white'}`}>
+                    {tr.type === 'income' ? '+' : '-'}{formatVal(tr.amount).text} {formatVal(tr.amount).sign}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTransaction(tr)}
+                    className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                    title={lang === 'ru' ? 'Удалить' : 'Delete'}
+                    aria-label={lang === 'ru' ? 'Удалить' : 'Delete'}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
