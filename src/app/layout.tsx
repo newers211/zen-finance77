@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeProvider from "@/components/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,17 +18,37 @@ export const metadata: Metadata = {
   description: "Simple personal finance app. Log expenses and income, manage categories, see your balance and charts. Clean, fast, no clutter.",
 };
 
+// Inline script: apply saved theme before React hydrates to avoid flash
+const themeScript = `
+(function() {
+  try {
+    var raw = localStorage.getItem('zen-finance-storage');
+    if (raw) {
+      var data = JSON.parse(raw);
+      if (data.state && data.state.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

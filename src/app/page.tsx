@@ -88,17 +88,7 @@ export default function Home() {
     };
   };
 
-  // 3. ТЕМНАЯ/СВЕТЛАЯ ТЕМА
-  useEffect(() => {
-    const root = window.document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
-
-  // 4. ИНИЦИАЛИЗАЦИЯ ДАННЫХ (только свои транзакции и категории по user_id)
+  // 3. ИНИЦИАЛИЗАЦИЯ ДАННЫХ (только свои транзакции и категории по user_id)
   useEffect(() => {
     const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -138,7 +128,7 @@ export default function Home() {
     setDeleteModal({ open: false, tr: null });
   };
 
-  // 5. ФИЛЬТРАЦИЯ
+  // 4. ФИЛЬТРАЦИЯ
   const filteredData = useMemo(() => {
     return transactions.filter(tr => {
       const date = new Date(tr.created_at);

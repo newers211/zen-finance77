@@ -16,9 +16,29 @@ export default function SettingsModal({ isOpen, onClose }: { isOpen: boolean, on
             <div className="space-y-6">
               <div>
                 <p className="text-[10px] font-bold uppercase text-zinc-400 mb-2">Theme</p>
-                <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
-                  <button onClick={() => setTheme('light')} className={`flex items-center justify-center gap-2 py-2 rounded-lg ${theme === 'light' ? 'bg-white shadow-sm' : 'opacity-40'}`}><Sun size={14}/> Light</button>
-                  <button onClick={() => setTheme('dark')} className={`flex items-center justify-center gap-2 py-2 rounded-lg ${theme === 'dark' ? 'bg-zinc-700 text-white shadow-sm' : 'opacity-40'}`}><Moon size={14}/> Dark</button>
+                <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setTheme('light')}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${
+                      theme === 'light'
+                        ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
+                        : 'text-zinc-500 dark:text-zinc-400 opacity-70 hover:opacity-90'
+                    }`}
+                  >
+                    <Sun size={16} /> Light
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTheme('dark')}
+                    className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${
+                      theme === 'dark'
+                        ? 'bg-zinc-700 text-white shadow-sm ring-1 ring-zinc-600'
+                        : 'text-zinc-500 dark:text-zinc-400 opacity-70 hover:opacity-90'
+                    }`}
+                  >
+                    <Moon size={16} /> Dark
+                  </button>
                 </div>
               </div>
               <div>
