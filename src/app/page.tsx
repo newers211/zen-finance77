@@ -39,7 +39,8 @@ export default function Home() {
     categories, setCategories, 
     theme, lang, 
     currency, setCurrency, 
-    rate, setRate 
+    rate, setRate,
+    clearUserData
   } = useFinanceStore();
 
   const [activeTab, setActiveTab] = useState('all'); 
@@ -90,25 +91,32 @@ export default function Home() {
     }
   }, [theme]);
 
-  // 4. ИНИЦИАЛИЗАЦИЯ ДАННЫХ
+  // 4. ИНИЦИАЛИЗАЦИЯ ДАННЫХ (только свои транзакции и категории по user_id)
   useEffect(() => {
     const initApp = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return router.push('/login');
-      
+
+      const userId = session.user.id;
       setUserEmail(session.user.email || 'User');
-      
+
       const [tx, cat] = await Promise.all([
-        supabase.from('transactions').select('*').order('created_at', { ascending: false }),
-        supabase.from('categories').select('*')
+        supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        supabase.from('categories').select('*').eq('user_id', userId)
       ]);
-      
+
       if (tx.data) setTransactions(tx.data);
       if (cat.data) setCategories(cat.data);
       setLoading(false);
     };
     initApp();
   }, [router, setTransactions, setCategories]);
+
+  const handleLogout = async () => {
+    clearUserData();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   // 5. ФИЛЬТРАЦИЯ
   const filteredData = useMemo(() => {
@@ -158,7 +166,7 @@ export default function Home() {
           <button onClick={() => setIsSettingsOpen(true)} className="p-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm active:scale-90 transition-all">
             <Settings size={20}/>
           </button>
-          <button onClick={() => supabase.auth.signOut().then(() => router.push('/login'))} className="p-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm text-red-500 active:scale-90 transition-all">
+          <button onClick={handleLogout} className="p-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-100 dark:border-zinc-800 shadow-sm text-red-500 active:scale-90 transition-all">
             <LogOut size={20}/>
           </button>
         </div>

@@ -25,6 +25,9 @@ interface FinanceStore {
   setLang: (l: 'ru' | 'en') => void;
   setCurrency: (c: 'RUB' | 'USD') => void;
   setRate: (r: number) => void;
+
+  // Очистить данные пользователя при выходе (чтобы другой пользователь не видел чужие данные)
+  clearUserData: () => void;
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -53,6 +56,8 @@ export const useFinanceStore = create<FinanceStore>()(
       
       setCurrency: (c) => set({ currency: c }),
       setRate: (r) => set({ rate: r }),
+
+      clearUserData: () => set({ transactions: [], categories: [] }),
     }),
     { 
       name: 'zen-finance-storage', // Ключ в localStorage

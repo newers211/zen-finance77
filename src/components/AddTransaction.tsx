@@ -53,9 +53,12 @@ export default function AddTransaction() {
   };
 
   const fetchCats = async () => {
+    const userId = await getUserId();
+    if (!userId) return;
     const { data } = await supabase
       .from('categories')
       .select('*')
+      .eq('user_id', userId)
       .eq('type', type);
 
     if (data) setLocalCats(data);
@@ -97,7 +100,7 @@ export default function AddTransaction() {
       await supabase.from('categories').insert([payload]);
     }
 
-    const { data: allCats } = await supabase.from('categories').select('*');
+    const { data: allCats } = await supabase.from('categories').select('*').eq('user_id', userId);
     if (allCats) setGlobalCategories(allCats);
 
     setIsEditing(null);
@@ -123,7 +126,7 @@ export default function AddTransaction() {
 
     fetchCats();
 
-    const { data: allCats } = await supabase.from('categories').select('*');
+    const { data: allCats } = await supabase.from('categories').select('*').eq('user_id', userId);
     if (allCats) setGlobalCategories(allCats);
   };
 
