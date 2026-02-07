@@ -1,4 +1,5 @@
 'use client'
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useFinanceStore } from '@/store/useStore';
@@ -33,20 +34,30 @@ const translations = {
 export default function AddTransaction() {
   const { addTransaction, setCategories: setGlobalCategories, lang, currency, rate } = useFinanceStore();
   const t = translations[lang === 'ru' ? 'ru' : 'en'];
-  
+
   const [isOpen, setIsOpen] = useState(false);
-  const [step, setStep] = useState(1); 
+  const [step, setStep] = useState(1);
   const [amount, setAmount] = useState('');
   const [type, setType] = useState<'expense' | 'income'>('expense');
   const [localCats, setLocalCats] = useState<any[]>([]);
-  
-  const [isEditing, setIsEditing] = useState<any>(null); 
+
+  const [isEditing, setIsEditing] = useState<any>(null);
   const [catName, setCatName] = useState('');
   const [catIcon, setCatIcon] = useState('📦');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  // 🔑 получаем user_id (ОБЯЗАТЕЛЬНО для RLS)
+  const getUserId = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id;
+  };
+
   const fetchCats = async () => {
-    const { data } = await supabase.from('categories').select('*').eq('type', type);
+    const { data } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('type', type);
+
     if (data) setLocalCats(data);
   };
 
@@ -54,19 +65,41 @@ export default function AddTransaction() {
     if (isOpen) fetchCats();
   }, [isOpen, type]);
 
+  // ➕ создать / ✏️ обновить категорию
   const handleSaveCat = async () => {
     if (!catName) return;
-    const payload = { name: catName, icon: catIcon, type };
+
+    const userId = await getUserId();
+    if (!userId) return;
+
+    const payload = {
+      user_id: userId,
+      name: catName,
+      icon: catIcon,
+      type
+    };
+
     if (isEditing && isEditing !== 'new') {
-      await supabase.from('categories').update(payload).eq('id', isEditing.id);
+      await supabase
+        .from('categories')
+        .update(payload)
+        .eq('id', isEditing.id)
+        .eq('user_id', userId);
+
       if (isEditing.name !== catName) {
-        await supabase.from('transactions').update({ category: catName }).eq('category', isEditing.name);
+        await supabase
+          .from('transactions')
+          .update({ category: catName })
+          .eq('category', isEditing.name)
+          .eq('user_id', userId);
       }
     } else {
       await supabase.from('categories').insert([payload]);
     }
+
     const { data: allCats } = await supabase.from('categories').select('*');
     if (allCats) setGlobalCategories(allCats);
+
     setIsEditing(null);
     setCatName('');
     setCatIcon('📦');
@@ -74,30 +107,48 @@ export default function AddTransaction() {
     fetchCats();
   };
 
+  // 🗑 удалить категорию
   const deleteCategory = async (id: string, e: any) => {
     e.stopPropagation();
     if (!confirm(t.confirmDelete)) return;
-    await supabase.from('categories').delete().eq('id', id);
+
+    const userId = await getUserId();
+    if (!userId) return;
+
+    await supabase
+      .from('categories')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
     fetchCats();
+
     const { data: allCats } = await supabase.from('categories').select('*');
     if (allCats) setGlobalCategories(allCats);
   };
 
+  // 💾 сохранить транзакцию
   const saveTransaction = async (category: any) => {
-    // ВАЖНО: Если выбраны USD, умножаем ввод на курс, чтобы в БД всегда были рубли
+    const userId = await getUserId();
+    if (!userId) return;
+
     const numAmount = parseFloat(amount);
     const finalAmount = currency === 'USD' ? numAmount * rate : numAmount;
 
     const newTx = {
+      user_id: userId,
       amount: finalAmount,
       type,
       category: category.name
     };
 
-    const { data, error } = await supabase.from('transactions').insert([newTx]).select();
-    
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert([newTx])
+      .select();
+
     if (!error && data) {
-      addTransaction(data[0]); 
+      addTransaction(data[0]);
       resetAll();
     }
   };
@@ -112,9 +163,9 @@ export default function AddTransaction() {
 
   return (
     <>
-      <motion.button 
+      <motion.button
         whileTap={{ scale: 0.9 }}
-        onClick={() => setIsOpen(true)} 
+        onClick={() => setIsOpen(true)}
         className="fixed bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-40"
       >
         <Plus size={32} />
@@ -123,7 +174,13 @@ export default function AddTransaction() {
       <AnimatePresence>
         {isOpen && (
           <div className="fixed inset-0 z-50 flex items-end justify-center">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={resetAll} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={resetAll}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
             <motion.div 
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} 
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
@@ -230,9 +287,9 @@ export default function AddTransaction() {
                 )}
               </AnimatePresence>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </>
-  );
-}
+            </div>
+          )}
+        </AnimatePresence>
+      </>
+    );
+  }
