@@ -3,8 +3,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Moon, Sun } from 'lucide-react';
 import { useFinanceStore } from '@/store/useStore';
 
+function applyThemeToDocument(theme: 'light' | 'dark') {
+  if (typeof document === 'undefined') return;
+  document.documentElement.classList.toggle('dark', theme === 'dark');
+}
+
 export default function SettingsModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const { theme, setTheme, lang, setLang } = useFinanceStore();
+
+  const handleSetTheme = (newTheme: 'light' | 'dark') => {
+    setTheme(newTheme);
+    applyThemeToDocument(newTheme);
+  };
 
   return (
     <AnimatePresence>
@@ -19,7 +29,7 @@ export default function SettingsModal({ isOpen, onClose }: { isOpen: boolean, on
                 <div className="grid grid-cols-2 gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-xl">
                   <button
                     type="button"
-                    onClick={() => setTheme('light')}
+                    onClick={() => handleSetTheme('light')}
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${
                       theme === 'light'
                         ? 'bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600'
@@ -30,7 +40,7 @@ export default function SettingsModal({ isOpen, onClose }: { isOpen: boolean, on
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTheme('dark')}
+                    onClick={() => handleSetTheme('dark')}
                     className={`flex items-center justify-center gap-2 py-2.5 rounded-lg font-medium transition-all ${
                       theme === 'dark'
                         ? 'bg-zinc-700 text-white shadow-sm ring-1 ring-zinc-600'

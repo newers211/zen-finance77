@@ -1,21 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { useFinanceStore } from '@/store/useStore';
 
 /**
- * Applies theme from store to <html class="dark"> so Tailwind dark: works on all pages (main, login, etc.)
+ * Applies theme from store to <html class="dark"> so Tailwind dark: works on all pages.
  */
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useFinanceStore((s) => s.theme);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    root.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
   return <>{children}</>;
