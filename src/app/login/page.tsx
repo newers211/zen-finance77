@@ -30,8 +30,9 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] dark:bg-black flex items-center justify-center p-6 text-slate-900 dark:text-white">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }} 
+      <motion.div
+        key={isLogin ? 'login' : 'register'}
+        initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md bg-white dark:bg-zinc-900 p-8 rounded-[40px] shadow-2xl border border-zinc-100 dark:border-zinc-800"
       >
@@ -48,30 +49,44 @@ export default function AuthPage() {
         <form onSubmit={handleAuth} className="space-y-4">
           <div className="space-y-1">
             <p className="text-[10px] font-bold uppercase ml-4 text-zinc-400">Email</p>
-            <input 
-              required type="email" value={email} onChange={e => setEmail(e.target.value)}
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
               className="w-full p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl outline-none focus:ring-2 ring-blue-500/20 border border-transparent focus:border-blue-500 transition-all font-medium"
               placeholder="name@mail.com"
             />
           </div>
           <div className="space-y-1">
             <p className="text-[10px] font-bold uppercase ml-4 text-zinc-400">Пароль</p>
-            <input 
-              required type="password" value={password} onChange={e => setPassword(e.target.value)}
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               className="w-full p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl outline-none focus:ring-2 ring-blue-500/20 border border-transparent focus:border-blue-500 transition-all font-medium"
               placeholder="••••••••"
             />
           </div>
 
-          <button 
-            type="submit" disabled={loading}
+          <button
+            type="submit"
+            disabled={loading}
             className="w-full py-5 bg-blue-600 text-white rounded-[24px] font-bold text-lg flex items-center justify-center gap-2 shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-4"
           >
-            {loading ? 'Секунду...' : isLogin ? <><LogIn size={20}/> Войти</> : <><UserPlus size={20}/> Регистрация</>}
+            {loading ? (
+              'Секунду...'
+            ) : isLogin ? (
+              <span className="inline-flex items-center gap-2"><LogIn size={20} /> Войти</span>
+            ) : (
+              <span className="inline-flex items-center gap-2"><UserPlus size={20} /> Регистрация</span>
+            )}
           </button>
         </form>
 
-        <button 
+        <button
+          type="button"
           onClick={() => setIsLogin(!isLogin)}
           className="w-full mt-6 text-xs font-bold text-zinc-400 hover:text-blue-500 transition-colors uppercase tracking-widest"
         >
