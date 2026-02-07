@@ -4,13 +4,35 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { LogIn, UserPlus, ShieldCheck } from 'lucide-react';
+import AppModal from '@/components/AppModal';
+
+type ModalState = {
+  open: boolean;
+  title: string;
+  message: string;
+  variant: 'danger' | 'success' | 'info';
+  primaryText: string;
+  onPrimary: () => void;
+};
+
+const emptyModal: ModalState = {
+  open: false,
+  title: '',
+  message: '',
+  variant: 'info',
+  primaryText: 'OK',
+  onPrimary: () => {},
+};
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState<ModalState>(emptyModal);
   const router = useRouter();
+
+  const closeModal = () => setModal(emptyModal);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,12 +40,40 @@ export default function AuthPage() {
 
     if (isLogin) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) alert(error.message);
-      else router.push('/');
+      if (error) {
+        setModal({
+          open: true,
+          title: 'Ошибка входа',
+          message: error.message,
+          variant: 'info',
+          primaryText: 'Понятно',
+          onPrimary: closeModal,
+        });
+      } else router.push('/');
     } else {
       const { error } = await supabase.auth.signUp({ email, password });
-      if (error) alert(error.message);
-      else alert('Регистрация успешна! Теперь войдите.');
+      if (error) {
+        setModal({
+          open: true,
+          title: 'Ошибка регистрации',
+          message: error.message,
+          variant: 'info',
+          primaryText: 'Понятно',
+          onPrimary: closeModal,
+        });
+      } else {
+        setModal({
+          open: true,
+          title: 'Аккаунт создан!',
+          message: 'Теперь войдите в аккаунт.',
+          variant: 'success',
+          primaryText: 'Войти в аккаунт',
+          onPrimary: () => {
+            closeModal();
+            setIsLogin(true);
+          },
+        });
+      }
     }
     setLoading(false);
   };
@@ -93,6 +143,15 @@ export default function AuthPage() {
           {isLogin ? 'Нет аккаунта? Создать' : 'Уже есть аккаунт? Войти'}
         </button>
       </motion.div>
+
+      <AppModal
+        isOpen={modal.open}
+        onClose={closeModal}
+        title={modal.title}
+        message={modal.message}
+        variant={modal.variant}
+        primaryButton={{ text: modal.primaryText, onClick: modal.onPrimary }}
+      />
     </div>
   );
 }

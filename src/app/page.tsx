@@ -10,6 +10,7 @@ import BalanceCard from '@/components/BalanceCard';
 import AddTransaction from '@/components/AddTransaction';
 import Filters from '@/components/Filters';
 import SettingsModal from '@/components/SettingsModal';
+import AppModal from '@/components/AppModal';
 
 // Глобальное состояние и база данных
 import { useFinanceStore } from '@/store/useStore';
@@ -21,12 +22,16 @@ const translations = {
   ru: { 
     greet: 'Привет', balance: 'Ваш баланс', income: 'Приход', expense: 'Расход', 
     history: 'История', ops: 'операций', empty: 'История пуста 🏜', loading: 'Загрузка...',
-    analytics: 'Аналитика'
+    analytics: 'Аналитика',
+    deleteConfirmTitle: 'Удалить операцию?', deleteConfirmMessage: 'Эта операция будет удалена из истории.',
+    deleteBtn: 'Удалить', cancelBtn: 'Отмена'
   },
   en: { 
     greet: 'Welcome', balance: 'Total Balance', income: 'Income', expense: 'Expense', 
     history: 'History', ops: 'transactions', empty: 'No history yet 🏜', loading: 'Loading...',
-    analytics: 'Analytics'
+    analytics: 'Analytics',
+    deleteConfirmTitle: 'Delete transaction?', deleteConfirmMessage: 'It will be removed from your history.',
+    deleteBtn: 'Delete', cancelBtn: 'Cancel'
   }
 };
 
@@ -47,6 +52,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('all'); 
   const [activePeriod, setActivePeriod] = useState('all');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; tr: { id: string } | null }>({ open: false, tr: null });
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState('');
 
@@ -119,16 +125,17 @@ export default function Home() {
     router.push('/login');
   };
 
-  const handleDeleteTransaction = async (tr: { id: string; user_id?: string }) => {
-    if (!confirm(lang === 'ru' ? 'Удалить эту операцию?' : 'Delete this transaction?')) return;
+  const doDeleteTransaction = async () => {
+    if (!deleteModal.tr) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase
       .from('transactions')
       .delete()
-      .eq('id', tr.id)
+      .eq('id', deleteModal.tr.id)
       .eq('user_id', user.id);
-    if (!error) removeTransaction(tr.id);
+    if (!error) removeTransaction(deleteModal.tr.id);
+    setDeleteModal({ open: false, tr: null });
   };
 
   // 5. ФИЛЬТРАЦИЯ
@@ -261,7 +268,7 @@ export default function Home() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => handleDeleteTransaction(tr)}
+                    onClick={() => setDeleteModal({ open: true, tr: { id: tr.id } })}
                     className="p-2 rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                     title={lang === 'ru' ? 'Удалить' : 'Delete'}
                     aria-label={lang === 'ru' ? 'Удалить' : 'Delete'}
@@ -282,6 +289,15 @@ export default function Home() {
       </div>
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <AppModal
+        isOpen={deleteModal.open}
+        onClose={() => setDeleteModal({ open: false, tr: null })}
+        title={t.deleteConfirmTitle}
+        message={t.deleteConfirmMessage}
+        variant="danger"
+        primaryButton={{ text: t.deleteBtn, onClick: doDeleteTransaction }}
+        secondaryButton={{ text: t.cancelBtn, onClick: () => {} }}
+      />
       <AddTransaction />
     </main>
   );

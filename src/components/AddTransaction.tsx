@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useFinanceStore } from '@/store/useStore';
 import { Plus, X, ArrowRight, Trash2, Edit2, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AppModal from '@/components/AppModal';
 
 const EMOJIS = [
   '💰','🛒','🚗','🏠','🍔','🍕','🍺','☕️','💊','🎁','🎮','🎬','👟','👕','📱','💻',
@@ -18,7 +19,8 @@ const translations = {
     choose: 'Выберите категорию', create: 'Создать', newCat: 'Новая категория',
     editCat: 'Редактирование', name: 'Название', placeholder: 'Напр: Такси',
     btnCreate: 'Создать категорию', btnSave: 'Сохранить изменения',
-    confirmDelete: 'Удалить категорию?',
+    confirmDelete: 'Удалить категорию?', confirmDeleteMessage: 'Категория будет удалена. Транзакции с ней останутся.',
+    btnDelete: 'Удалить', btnCancel: 'Отмена',
     RUB: 'Российский рубль (₽)', USD: 'Доллар США ($)'
   },
   en: {
@@ -26,7 +28,8 @@ const translations = {
     choose: 'Choose category', create: 'Create', newCat: 'New category',
     editCat: 'Edit category', name: 'Name', placeholder: 'e.g. Taxi',
     btnCreate: 'Create category', btnSave: 'Save changes',
-    confirmDelete: 'Delete category?',
+    confirmDelete: 'Delete category?', confirmDeleteMessage: 'Category will be removed. Transactions will keep their category name.',
+    btnDelete: 'Delete', btnCancel: 'Cancel',
     RUB: 'Russian Ruble (₽)', USD: 'US Dollar ($)'
   }
 };
@@ -45,6 +48,7 @@ export default function AddTransaction() {
   const [catName, setCatName] = useState('');
   const [catIcon, setCatIcon] = useState('📦');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [deleteCatModal, setDeleteCatModal] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
 
   // 🔑 получаем user_id (ОБЯЗАТЕЛЬНО для RLS)
   const getUserId = async () => {
@@ -110,24 +114,26 @@ export default function AddTransaction() {
     fetchCats();
   };
 
-  // 🗑 удалить категорию
-  const deleteCategory = async (id: string, e: any) => {
-    e.stopPropagation();
-    if (!confirm(t.confirmDelete)) return;
-
+  const doDeleteCategory = async () => {
+    if (!deleteCatModal.id) return;
     const userId = await getUserId();
     if (!userId) return;
 
     await supabase
       .from('categories')
       .delete()
-      .eq('id', id)
+      .eq('id', deleteCatModal.id)
       .eq('user_id', userId);
 
     fetchCats();
-
     const { data: allCats } = await supabase.from('categories').select('*').eq('user_id', userId);
     if (allCats) setGlobalCategories(allCats);
+    setDeleteCatModal({ open: false, id: null });
+  };
+
+  const openDeleteCategoryModal = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteCatModal({ open: true, id });
   };
 
   // 💾 сохранить транзакцию
@@ -246,7 +252,7 @@ export default function AddTransaction() {
                         </button>
                         <div className="absolute right-2 top-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={(e) => { e.stopPropagation(); setIsEditing(c); setCatName(c.name); setCatIcon(c.icon); }} className="p-2 bg-white dark:bg-zinc-700 shadow-md rounded-lg text-blue-500"><Edit2 size={14}/></button>
-                          <button onClick={(e) => deleteCategory(c.id, e)} className="p-2 bg-white dark:bg-zinc-700 shadow-md rounded-lg text-red-500"><Trash2 size={14}/></button>
+                          <button onClick={(e) => openDeleteCategoryModal(c.id, e)} className="p-2 bg-white dark:bg-zinc-700 shadow-md rounded-lg text-red-500"><Trash2 size={14}/></button>
                         </div>
                       </div>
                     ))}
@@ -293,6 +299,15 @@ export default function AddTransaction() {
             </div>
           )}
         </AnimatePresence>
+        <AppModal
+          isOpen={deleteCatModal.open}
+          onClose={() => setDeleteCatModal({ open: false, id: null })}
+          title={t.confirmDelete}
+          message={t.confirmDeleteMessage}
+          variant="danger"
+          primaryButton={{ text: t.btnDelete, onClick: doDeleteCategory }}
+          secondaryButton={{ text: t.btnCancel, onClick: () => {} }}
+        />
       </>
     );
   }
